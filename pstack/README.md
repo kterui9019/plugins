@@ -289,7 +289,3 @@ to set it up, point cursor at [`FOR_AGENTS.md`](./automations/benny/FOR_AGENTS.m
 ## license
 
 MIT
-
-## Devin MVP adapter
-
-A separate, skills-only adapter for Devin is available in [devin/](devin/README.md). It covers poteto mode, bug fix, feature, investigation, verification, and TDD without changing the Cursor or Claude Code plugin. See its README for installation, limitations, and validation status.

@@ -2,6 +2,8 @@
 
 Official Cursor plugins for popular developer tools, frameworks, and SaaS products. Each plugin is a standalone directory at the repository root with its own `.cursor-plugin/plugin.json` manifest.
 
+The [Devin adapter for pstack](pstack/devin/README.md) includes poteto mode and TDD.
+
 ## Plugins
 
 | `name` | Plugin | Author | Category | `description` (from marketplace) |

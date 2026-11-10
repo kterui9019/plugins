@@ -17,6 +17,15 @@ class PackageTest(unittest.TestCase):
             self.assertRegex(content, r'(?m)^description: .+')
             self.assertTrue(content.startswith('---\n'))
 
+    def test_explicit_invocation_and_inherited_permissions(self):
+        for path in (ROOT / 'skills').glob('*/SKILL.md'):
+            with self.subTest(skill=path.parent.name):
+                _, header, body = path.read_text().split('---\n', 2)
+                fields = dict(line.split(': ', 1) for line in header.splitlines())
+                self.assertEqual(set(fields), {'name', 'description', 'triggers'})
+                self.assertEqual(fields['triggers'], '[user]')
+                self.assertTrue(body.strip())
+
     def test_workflows_and_safe_fallbacks_are_packaged(self):
         content = (ROOT / 'skills/poteto-mode/SKILL.md').read_text()
         for heading in ('Bug fix', 'Feature', 'Investigation', 'Verification', 'TDD', 'Devin compatibility'):

@@ -1,6 +1,7 @@
 ---
 name: poteto-mode
 description: Use when explicitly asked for poteto mode or a pstack workflow for a bug fix, feature, investigation, or verification.
+triggers: [user]
 ---
 
 # Poteto mode for Devin
@@ -29,7 +30,7 @@ Keep the work read-only unless the user authorizes changes. Inspect relevant sou
 
 ## Verification
 
-Identify the requested behavior and the actual artifact or revision to check. Run the narrowest relevant checks, including the real surface when feasible. Report commands or reproduction steps and outcomes; distinguish a failure, a skipped check, and an unavailable check from a pass. Do not change code unless authorized.
+Identify the requested behavior and the actual artifact or revision to check. Run the narrowest relevant checks, including the real surface when feasible. Report commands or reproduction steps and outcomes; distinguish a failure, a skipped check, and an unavailable check from a pass. Check out or identify the exact candidate revision and try a case that would disprove the claim. Include the observed result and any mismatch with the requested environment. Do not change code unless authorized.
 
 ## TDD
 
@@ -37,7 +38,7 @@ For an explicitly requested TDD cycle or a cheap meaningful regression test, wri
 
 ## Devin compatibility
 
-Use only tools and arguments actually exposed in this session. When subagents are available and delegation is allowed, use `subagent_explore` for read-only research and `subagent_general` for implementation; provide the goal, relevant paths, scope, and expected evidence. The lead reviews all results. If subagents are disabled or unavailable, do the work directly. Do not assume plugin custom subagents exist in Cloud sessions. Avoid parallel edits to shared files.
+Use the project working directory for repository paths. Inspect files with Devin’s available read, grep, and glob tools. Use edit for scoped changes and exec for reproductions and tests. If a tool is unavailable, use an equivalent permitted by the session or name the missing check. When subagents are available and delegation is allowed, use `subagent_explore` for read-only research and `subagent_general` for implementation; provide the goal, relevant paths, scope, and expected evidence. Give each worker the reproduction or acceptance check because it starts with its own conversation. The lead reviews its diff and reruns the decisive check. If subagents are disabled or unavailable, do the work directly. Do not assume plugin custom subagents exist in Cloud sessions. Avoid parallel edits to shared files.
 
 Do not pass Cursor `Task` fields, model slugs, effort levels, or Cursor configuration paths to Devin. `run_subagent` selects a profile, not a model. The general profile uses the parent model; explore uses the configured or routed subagent model. Do not promise a particular model or automatically change the user's settings.
 
