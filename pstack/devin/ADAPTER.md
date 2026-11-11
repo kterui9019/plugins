@@ -20,6 +20,8 @@ Omit Cursor model IDs, speed, effort, environment, resume IDs and file attachmen
 
 Use the visible conversation, an explicitly supplied Devin session export, and repository evidence for recall, reflect and session-pickup. Skip transcript globbing and Cursor JSONL parsing, including shell snippets. Report the time range actually covered. For generated artifacts, return the real path or an attachment supported by the active client.
 
+The package excludes make-bot-ui and the Benny automation pack because their setup depends on Cursor services. If requested, report that dependency before taking any setup action.
+
 Use git and an authenticated forge client for authorized PR and review actions. Existing Bugbot comments are review input. Starting Bugbot, Cursor Automations (including Benny), Grok Bot webhooks, Origin-only services and Cursor Custom Modes need their respective platforms. Skip their provisioning and dependent actions. Never run Cursor setup commands or request secrets for these steps. Use bounded foreground checks in place of /loop or routine wakes. Report remaining checks when the session ends. Only describe a schedule or notification as active after an authorized integration confirms it.
 
 Use locally installed dependencies for the bundled helpers. Inspect the helper requirements first. Model checking may require a runtime and TLC. A missing dependency, expired credential, unavailable fixture or skipped surface is a verification gap. A destructive cleanup needs explicit approval for the actual targets. Missing session history is never evidence of an unused worktree.

@@ -9,11 +9,15 @@ SOURCE = ROOT / "pstack"
 OUT = SOURCE / "devin"
 NATIVE = ROOT / "scripts/pstack-devin"
 TREES = ("skills", "agents", "docs/guide")
-BENNY = "automations/benny/"
+# Grok Bot routine creation is intrinsic to this workflow.
+EXCLUDED_SKILLS = {"make-bot-ui"}
+OMITTED_GUIDE_SECTIONS = {
+    "docs/guide/07-overnight.md": "## Let loops start themselves",
+    "docs/guide/09-make-it-yours.md": "## Build a bot UI with `/make-bot-ui`",
+}
 BODY_OVERRIDES = {
     "skills/poteto-help/SKILL.md": "poteto-help.md",
     "skills/setup-pstack/SKILL.md": "setup-pstack.md",
-    "skills/make-bot-ui/SKILL.md": "make-bot-ui.md",
     "agents/poteto-agent.md": "poteto-agent.md",
 }
 ADAPTER = (
@@ -36,24 +40,19 @@ def entrypoint(path, content):
     if path == "skills/poteto-mode/SKILL.md":
         start, end = body.index("## Subagents"), body.index("## Writing the reply")
         body = body[:start] + "## Subagents\n\nUse the worker profiles and model selection in the Devin adapter. Give each delegate its scope and review the returned evidence.\n\n" + body[end:]
-        body += "\nFor Benny triage or reproduction, read [the operator procedure](../../benny/README.md) and use the requested thread.\n"
         body += "\nFor a verification-only request, identify the exact revision and behavior, run the closest real-surface check and report observed outcomes and unavailable checks. Keep the investigation read-only.\n"
     adapter = "../../ADAPTER.md" if skill else "../ADAPTER.md"
     return "---\n" + header + "---\n\n" + ADAPTER.format(path=adapter) + "\n\n" + body.strip() + "\n"
 
 
 def render(path, raw):
-    if path.startswith(BENNY):
-        content = raw.decode().replace(".cursor/benny/", ".devin/benny/")
-        content = content.replace("prefer_cursor_actions: true", "prefer_cursor_actions: false")
-        content = content.replace("Prefer configured Cursor Slack actions.", "Use the configured Devin Slack actions.")
-        content = content.replace("supplied by the automation", "supplied by the operator")
-        content = content.replace("Use only from the configured Benny triage automation.", "Use for an authorized Benny triage run.")
-        content = content.replace("Use only from the configured Benny repro automation.", "Use for an authorized Benny reproduction run.")
-        return content.encode()
     if not path.endswith(".md"):
         return raw
     content = raw.decode()
+    if path in OMITTED_GUIDE_SECTIONS:
+        before, section = content.split(OMITTED_GUIDE_SECTIONS[path], 1)
+        _, after = section.split("**Pitfall:**", 1)
+        content = before + "**Pitfall:**" + after
     if path.endswith("/SKILL.md") or path.startswith("agents/"):
         content = entrypoint(path, content)
     elif path.endswith("/playbooks/worktree-cleanup.md"):
@@ -61,8 +60,6 @@ def render(path, raw):
     if path.startswith("docs/guide/"):
         content = content.replace("../harness/claude-code.md",
                                   "https://github.com/cursor/plugins/blob/main/pstack/docs/harness/claude-code.md")
-        content = content.replace("../../automations/benny/",
-                                  "../../benny/").replace("../../benny/FOR_AGENTS.md", "../../benny/README.md")
     content = content.replace("~/.cursor/skills/", "~/.config/devin/skills/")
     content = content.replace(".cursor/skills/", ".devin/skills/")
     return content.encode()
@@ -70,10 +67,11 @@ def render(path, raw):
 
 def inputs():
     paths = subprocess.check_output(
-        ["git", "ls-files", "-z", "--", *TREES, BENNY + "skills/triage-issue-reports",
-         BENNY + "skills/reproduce-and-fix-issues", BENNY + "templates/configuration.example.yaml"], cwd=SOURCE
+        ["git", "ls-files", "-z", "--", *TREES], cwd=SOURCE
     ).decode().split("\0")
     for path in filter(None, paths):
+        if any(path.startswith(f"skills/{name}/") for name in EXCLUDED_SKILLS):
+            continue
         # The Devin cleanup playbook uses git directly and cannot infer activity
         # from the upstream shell helper's Cursor transcript scan.
         if path != "skills/poteto-mode/scripts/worktree-audit.sh":
@@ -86,13 +84,8 @@ def main():
     check = parser.parse_args().check
     expected = set(inputs())
     errors = []
-    targets = set()
     for path in sorted(expected):
-        target = path
-        if path.startswith(BENNY):
-            target = "benny/" + path[len(BENNY):].replace("templates/", "")
-        targets.add(target)
-        src, dest = SOURCE / path, OUT / target
+        src, dest = SOURCE / path, OUT / path
         data = render(path, src.read_bytes())
         mode = 0o755 if src.stat().st_mode & 0o111 else 0o644
         if check:
@@ -104,9 +97,10 @@ def main():
             dest.write_bytes(data)
             dest.chmod(mode)
 
-    for tree in (*TREES, "benny/skills"):
+    # Detect leftover files from the earlier Benny package too.
+    for tree in (*TREES, "benny"):
         for file in (OUT / tree).rglob("*"):
-            if file.is_file() and file.relative_to(OUT).as_posix() not in targets:
+            if file.is_file() and file.relative_to(OUT).as_posix() not in expected:
                 errors.append(f"unexpected package file: {file.relative_to(OUT)}")
     if errors:
         raise SystemExit("\n".join(errors))

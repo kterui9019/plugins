@@ -141,6 +141,4 @@ A large or cross-cutting effort (a migration across many call sites, an ambitiou
 - **Worktree and simulator cleanup.** Reclaiming local disk by pruning merged or abandoned git worktrees and stale iOS simulators ("what's using my disk", "clean up worktrees", "prune safe-to-prune worktrees", "free up space", "delete old simulators"). File: `playbooks/worktree-cleanup.md`.
 - **Opening a PR.** Invoked at the end of every other playbook.
 
-For Benny triage or reproduction, read [the operator procedure](../../benny/README.md) and use the requested thread.
-
 For a verification-only request, identify the exact revision and behavior, run the closest real-surface check and report observed outcomes and unavailable checks. Keep the investigation read-only.
