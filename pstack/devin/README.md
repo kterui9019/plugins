@@ -1,51 +1,58 @@
 # pstack for Devin
 
-This skills-only port packages two user-invoked commands. Use `/pstack-devin:poteto-mode` with a task and Devin selects the bug fix, feature, investigation, or verification workflow. Use `/pstack-devin:tdd` for a focused failing-before, passing-after regression check. For example:
+This package exposes 57 skills from the upstream pstack snapshot, including the 24 engineering principles. Poteto mode includes all 23 playbooks. The package also contains the two local agent profiles, reference material, command-line helpers and fixtures. Some workflows depend on host services. Their coverage is listed below.
 
-```text
-/pstack-devin:poteto-mode Investigate where duplicate requests are filtered. Cite the call sites.
-/pstack-devin:tdd Fix the duplicate request in the retry path and show the test before and after.
-```
-
-## Try the MVP branch locally
-
-Check out `feature/devin-adapter-mvp` in the fork. From the repository root, run:
+## Install from this branch
 
 ```sh
+git clone --branch feature/devin-full-catalog --single-branch https://github.com/kterui9019/plugins.git
+cd plugins
 devin auth login
 devin plugins install --local ./pstack/devin
 devin plugins info pstack-devin
 ```
 
-Open a new session in the project you want to work on and enter one of the commands above. Local installation links the checkout on this machine. Keep the checkout available. If using the standalone archive, extract it and pass the extracted directory containing `.devin-plugin` to the same install command.
+Keep the checkout available and start a new session in your target project. For the standalone ZIP, extract it and give the directory containing `.devin-plugin` to the same install command. Once this branch reaches the fork's default branch, the personal install command is `devin plugins install 'kterui9019/plugins#pstack/devin'`. The web app accepts the same repository and subdirectory.
 
-After the adapter reaches the fork's default branch, use `devin plugins install 'OWNER/plugins#pstack/devin'` (replace OWNER with the fork owner) for a personal installation. For Cloud, add the fork and the same subdirectory through **Customize → Plugins → Add plugin → From repository**, subject to organization policy.
+```text
+/pstack-devin:poteto-help How can I verify a retry bug on the real surface?
+/pstack-devin:poteto-mode Fix the retry bug and show the reproduction before and after.
+/pstack-devin:architect Compare two designs for idempotent retries.
+/pstack-devin:statechart Model the allowed transitions of the retry queue.
+```
 
-## Porting choices
+## What runs where
 
-The [Cursor workflow](../skills/poteto-mode/SKILL.md) orchestrates other pstack skills. The [Claude Code adapter](../docs/harness/claude-code.md) translates tool names, paths and model arguments at runtime. This MVP packages the four routes inline so a Devin session can follow them from the installed plugin alone.
+| Upstream feature | Devin implementation | Boundary |
+| --- | --- | --- |
+| 33 workflow skills and 24 principles | User-invoked slash commands, cross-skill reads and bundled references | All 57 are explicit entry points. Cursor path-based activation is omitted. |
+| 23 playbooks | The poteto-mode router loads the playbook file relative to its skill | Review, test, forge, simulator and recording steps depend on tools and permissions in the session. |
+| poteto-agent and comment-sicko | Both local plugin profiles include the [Devin bindings](ADAPTER.md) | In Cloud, pass the task and profile instructions to a built-in worker if available. Report missing independent verification if working alone. |
+| Parallel design and review | Split by scope, run available profiles and aggregate evidence | Per-call Cursor model IDs, effort selection and guaranteed multi-model voting are unavailable. |
+| Verification, statechart, PR polling | Bundled scripts and fixtures. Worktree cleanup uses a Devin-specific inventory procedure. | Some helpers need Bun, Node, Java/TLC, app control or forge credentials. Cursor chat activity cannot establish safe deletion. |
+| Session pickup, recall, reflect | Current conversation, authorized exports and repository state | No automatic access to historical Cursor chats or persistent Custom Mode. |
+| PR review and autonomous loops | Existing forge review threads and bounded foreground checks | Starting Bugbot and persistent scheduling require an external integration. |
 
-| Upstream dependency | Devin behavior |
-| --- | --- |
-| Cursor tools and configuration paths | Use the current project's files and session tools. The manifest and skills live under the Devin plugin root. |
-| Model rules, effort and worker selection | Inherit the session configuration. When available, use the built-in explore profile for research and general for scoped implementation. The lead handles the work when delegation is unavailable. |
-| Bugbot, Automations, cloud-agent launches, other pstack skills | Skip unavailable steps, report the reason, and identify any evidence that could not be collected. |
-| Custom agent profiles | Optional in Devin CLI and Desktop. Cloud does not load plugin custom subagents. This adapter ships none. |
+The package excludes make-bot-ui, which provisions Grok Bot webhook routines, and the Benny pack, which depends on Cursor Automations. Their entry points, configuration templates and setup guidance are omitted from the generated package.
 
-## Validation
+The generator keeps upstream workflow prose and examples for the included features. Each skill and agent loads the Devin bindings before interpreting them. Native replacements cover setup, help, the poteto delegate and destructive cleanup. Use the examples above for Devin invocation.
 
-From the repository root, run:
+## Validation and updates
+
+From the repository root:
 
 ```sh
+python3 scripts/generate-pstack-devin.py
+python3 scripts/generate-pstack-devin.py --check
 python3 pstack/devin/tests/test_package.py
 node scripts/check-pstack-docs.mjs
 node scripts/generate-pstack-harness-trees.mjs --check
 ```
 
-All three commands passed on the MVP branch. On macOS with Devin CLI 3000.12.43, copying both skill directories into a scratch project's `.devin/skills/` made `devin skills list` display both as user-triggered. `devin skills show` loaded each body. This exercised Devin's skill parser. Plugin installation stopped at the CLI sign-in requirement, before namespaced command discovery.
+Make workflow changes in the upstream sources or in the generator's native overrides under `scripts/pstack-devin/` and regenerate. The check compares generated contents and executable bits with upstream. Update the coverage assertions when upstream adds or removes a workflow.
 
-To finish runtime verification, install the plugin while signed in, confirm both namespaced commands appear, then run the investigation and regression examples against a known fixture. Check the cited source and the actual failing and passing outputs. Repeat with delegation unavailable and in Cloud. Plugin installation, task execution, delegated model selection, and Cloud behavior remain unverified.
+Verified on macOS with Devin CLI 3000.12.43. In a scratch project, the CLI listed all 57 project skills as user-triggered and showed their bodies. The package tests, generator checks, upstream documentation checks and all seven plan-checker tests passed. Of 75 statechart rendering and TLC-output tests, 74 passed. The live TLC re-run was skipped because its JAR was unavailable.
 
-Official references: [Plugins](https://docs.devin.ai/cli/extensibility/plugins/overview), [Creating skills](https://docs.devin.ai/cli/extensibility/skills/creating-skills), [Subagents](https://docs.devin.ai/cli/subagents).
+The CLI requires sign-in for plugin installation. Namespaced discovery after installation, local profile dispatch, model behavior, real task execution, Cloud, and external services still need authenticated testing. To smoke-test, verify the plugin info, run poteto-help, run a TDD task with a known failing reproducer and capture its two results. In CLI/Desktop, request a scoped comment review and check which profile was used. Repeat in Cloud and record the fallback.
 
-Adapted from pstack by Lauren Tan and contributors under the [MIT license](LICENSE).
+[Devin plugins](https://docs.devin.ai/cli/extensibility/plugins/overview) · [Skills](https://docs.devin.ai/cli/extensibility/skills/creating-skills) · [Subagents](https://docs.devin.ai/cli/subagents) · [MIT license](LICENSE)
